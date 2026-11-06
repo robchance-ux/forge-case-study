@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge Design System Case Study</title>
+<meta name="description" content="Case study by Robert Chance: building, extending, and adapting the Forge Design System across Thomson Reuters, Refinitiv, and LSEG.">
+<meta property="og:title" content="Forge Design System Case Study – Robert Chance">
+<meta property="og:description" content="Building, extending, and adapting a flexible component library that has delivered on the strategic goals of three separate global enterprises.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather+Sans:ital,wght@0,300;0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------------
+   Tokens
+   Names prefixed --bert-* are Bert DS variables (same values as the
+   Bert DS Figma library). Names prefixed --cs-* are case-study values
+   that sit outside Bert DS today.
+------------------------------------------------------------------- */
+:root {
+  /* Bert DS primitives */
+  --bert-warm-blue-100: #d4dee8;
+  --bert-warm-blue-400: #7093b2;
+  --bert-warm-blue-500: #547a9c;
+  --bert-warm-blue-700: #30465a;
+  --bert-gray-50: #f2f2f2;
+  --bert-gray-100: #e5e5e5;
+  --bert-gray-700: #4d4d4d;
+  --bert-white: #ffffff;
+  /* Bert DS semantic */
+  --bert-text-default: var(--bert-gray-700);
+  --bert-text-white: var(--bert-white);
+  /* Bert DS spacing (primitives) */
+  --bert-space-4: 4px;  --bert-space-8: 8px;  --bert-space-12: 12px; --bert-space-16: 16px;
+  --bert-space-24: 24px; --bert-space-32: 32px; --bert-space-48: 48px; --bert-space-64: 64px;
+  --bert-space-72: 72px; --bert-space-96: 96px;
+  /* Bert DS corner radius */
+  --bert-radius-small: 8px;
+  /* Off-system case-study values */
+  --cs-banner-start: #032133;
+  --cs-banner-end: #09476e;
+  --cs-card-blue: linear-gradient(180deg, #e7f5fd 3%, #c2d6e3 21%, #9db8c8 79%, #6d9fbf 100%);
+  --cs-card-radius: 18px;
+  /* Layout */
+  --banner-h: 92px;
+  --nav-w: 292px;
+  --measure: 852px;
+  --content-max: 1296px;
+  --font: "Merriweather Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--banner-h) + var(--bert-space-24)); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--bert-text-default);
+  background: var(--bert-gray-50);
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--bert-warm-blue-700); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--bert-warm-blue-500); outline-offset: 2px; border-radius: 4px; }
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--bert-white); color: var(--bert-text-default);
+  padding: var(--bert-space-8) var(--bert-space-16);
+}
+.skip-link:focus { left: var(--bert-space-16); top: var(--bert-space-16); }
+
+/* ---------- Banner ---------- */
+.banner {
+  position: fixed; inset: 0 0 auto 0; height: var(--banner-h); z-index: 20;
+  display: flex; align-items: center; gap: var(--bert-space-16);
+  padding: 0 var(--bert-space-48);
+  background: linear-gradient(90deg, var(--cs-banner-start) 32%, var(--cs-banner-end) 95%);
+  color: var(--bert-text-white);
+}
+.banner__photo { width: 64px; height: 61px; border-radius: 50%; object-fit: cover; flex: none; background: var(--cs-banner-end); }
+.banner__id { flex: 1; min-width: 0; }
+.banner__name { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.3; }
+.banner__role { font-size: 12px; margin: 0; }
+.banner__contact { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--bert-space-4); font-size: 12px; font-weight: 700; }
+.banner__contact li { display: flex; align-items: center; gap: var(--bert-space-8); }
+.banner__contact a { color: inherit; text-decoration: none; }
+.banner__contact a:hover { text-decoration: underline; }
+.banner__contact svg { width: 14px; height: 14px; flex: none; }
+
+/* ---------- Side navigation ---------- */
+.nav {
+  position: fixed; top: var(--banner-h); bottom: 0; left: 0; width: var(--nav-w); z-index: 10;
+  overflow-y: auto;
+  background: var(--bert-warm-blue-100);
+  border-right: 1px solid var(--bert-warm-blue-400);
+  padding: var(--bert-space-48) var(--bert-space-8) var(--bert-space-24);
+}
+.nav ul { list-style: none; margin: 0; padding: 0; }
+.nav > ul > li + li { margin-top: var(--bert-space-8); }
+.nav a {
+  display: block; padding: 6px var(--bert-space-12);
+  font-size: 16px; font-weight: 700; line-height: 1.4;
+  color: var(--bert-text-default); text-decoration: none;
+  border: 1px solid transparent; border-radius: var(--bert-radius-small);
+}
+.nav a:hover { background: rgba(255,255,255,.45); }
+.nav a[aria-current="true"] { background: var(--bert-gray-100); border-color: var(--bert-warm-blue-500); }
+.nav .sub { margin-top: var(--bert-space-4); }
+.nav .sub a { padding-left: 36px; font-size: 15px; }
+
+/* ---------- Content ---------- */
+main {
+  margin-left: var(--nav-w);
+  padding: calc(var(--banner-h) + var(--bert-space-48)) var(--bert-space-72) var(--bert-space-96);
+}
+.inner { max-width: var(--content-max); }
+.chapter + .chapter { margin-top: var(--bert-space-96); padding-top: var(--bert-space-48); border-top: 1px solid var(--bert-warm-blue-100); }
+.sub-section { margin-top: var(--bert-space-64); }
+.prose { max-width: var(--measure); }
+.prose p { margin: 0 0 var(--bert-space-12); }
+h1, h2, h3, h4 { color: var(--bert-text-default); font-weight: 700; line-height: 1.3; margin: 0 0 var(--bert-space-16); }
+h1 { font-size: 24px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+.lead { font-size: 16px; font-weight: 700; margin-bottom: var(--bert-space-16) !important; }
+.prose ul { margin: 0 0 var(--bert-space-12); padding-left: 1.4em; }
+.prose li { margin-bottom: var(--bert-space-4); }
+.note { font-size: 12px; font-style: italic; max-width: var(--measure); margin: var(--bert-space-48) 0 var(--bert-space-12); }
+.note strong { font-style: italic; }
+
+figure { margin: var(--bert-space-32) 0 0; }
+figure.visual img { border-radius: var(--cs-card-radius); }
+.card {
+  margin-top: var(--bert-space-32);
+  padding: var(--bert-space-48);
+  border-radius: var(--cs-card-radius);
+  background: var(--cs-card-blue);
+}
+.card h3, .card h4 { margin-bottom: var(--bert-space-16); }
+.card .prose { margin-bottom: var(--bert-space-32); }
+.card figure { margin: 0; }
+.card figcaption { font-weight: 700; font-style: italic; margin-bottom: var(--bert-space-16); }
+.card-columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bert-space-32); }
+.card-columns ul { margin: 0 0 var(--bert-space-24); padding-left: 1.4em; }
+.card-columns img { border-radius: var(--bert-radius-small); }
+
+.signature { font-style: italic; margin-top: var(--bert-space-48); }
+.back-top { display: inline-block; margin-top: var(--bert-space-32); font-size: 12px; font-weight: 700; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 960px) {
+  :root { --banner-h: 0px; }
+  html { scroll-padding-top: 64px; }
+  .banner { position: static; height: auto; flex-wrap: wrap; padding: var(--bert-space-16); }
+  .banner__contact { width: 100%; grid-auto-flow: row; }
+  .nav {
+    position: sticky; top: 0; bottom: auto; width: auto; height: auto;
+    padding: var(--bert-space-8) var(--bert-space-16);
+    border-right: 0; border-bottom: 1px solid var(--bert-warm-blue-400);
+    overflow-x: auto; overflow-y: hidden;
+  }
+  .nav > ul { display: flex; gap: var(--bert-space-4); white-space: nowrap; }
+  .nav > ul > li + li { margin-top: 0; }
+  .nav .sub { display: none; }
+  .nav a { font-size: 14px; padding: 6px 10px; }
+  main { margin-left: 0; padding: var(--bert-space-32) var(--bert-space-16) var(--bert-space-64); }
+  .card { padding: var(--bert-space-16); }
+  .card-columns { grid-template-columns: 1fr; }
+  .chapter + .chapter { margin-top: var(--bert-space-64); }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+
+<header class="banner">
+  <img class="banner__photo" src="img/photo.webp" width="66" height="63" alt="Robert Chance">
+  <div class="banner__id">
+    <p class="banner__name">Robert Chance, MLIS</p>
+    <p class="banner__role">User Experience &amp; Information Architecture leadership</p>
+  </div>
+  <ul class="banner__contact" aria-label="Contact">
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><a href="tel:+16122476189">(612) 247-6189</a></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><a href="mailto:rchance36@gmail.com">rchance36@gmail.com</a></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Minneapolis, MN</li>
+  </ul>
+</header>
+
+<nav class="nav" aria-label="Case study sections">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#foundations">Foundations &amp; styles</a></li>
+    <li><a href="#thomson-reuters">Thomson Reuters</a></li>
+    <li><a href="#refinitiv">Refinitiv</a></li>
+    <li><a href="#lseg">LSEG</a>
+      <ul class="sub">
+        <li><a href="#lseg-phase-1">OneLSEG phase 1</a></li>
+        <li><a href="#lseg-migration">Migration and integration</a></li>
+        <li><a href="#lseg-phase-2">OneLSEG phase 2</a></li>
+        <li><a href="#lseg-data-viz">Data visualization</a></li>
+        <li><a href="#lseg-forge-beyond">Forge beyond marketing</a></li>
+      </ul>
+    </li>
+    <li><a href="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+
+<main id="content">
+<div class="inner">
+
+<!-- Overview -->
+<section class="chapter" id="overview" aria-labelledby="h-overview">
+  <div class="prose">
+    <h1 id="h-overview">Case study: Forge Design System</h1>
+    <p class="lead">Building, extending, and adapting a flexible component library that has delivered on the strategic goals of three separate global enterprises</p>
+    <p>Forge Design System is the style libraries, UX guidelines, and component library that deliver the LSEG digital experience in support of all marketing, customer support, and product portals. I have served as the UX lead and owner of Forge and its predecessor for nearly a decade. During that time Forge and the UX teams I led had great success in serving the digital experience goals of three separate companies.</p>
+  </div>
+  <p class="note"><strong>Note:</strong> LSEG NDAs and security measures prevent me from sharing or accessing any of the design files or design system assets I delivered during my tenure there. As a result, the assets in this case study are limited to screenshots of publicly available live pages.</p>
+  <figure class="visual" style="margin-top:0">
+    <img src="img/overview.webp" width="1296" height="729" alt="Forge Design System documentation site, Get Started page">
+  </figure>
+</section>
+
+<!-- Foundations -->
+<section class="chapter" id="foundations" aria-labelledby="h-foundations">
+  <div class="prose">
+    <h2 id="h-foundations">Foundations and style libraries</h2>
+    <p>Forge foundations are the style libraries and tokens representing the core subatomic building blocks from which components and compositions are built to deliver a consistent, accessible, and delightful customer experience. I managed the design, delivery, and integration of libraries for colors, type styles, responsive grids, spacing specifications, and effects across design (Figma), ReactJS, and Adobe Experience Manager (AEM).</p>
+    <p>An extension of these foundations was guidelines and documentation patterns for using and contributing to Forge, accessibility standards and practices, and documentation components and templates.</p>
+  </div>
+  <figure class="visual">
+    <img src="img/foundations.webp" width="1296" height="821" loading="lazy" alt="Forge documentation pages for grids and columns, color variables, and the brand color library">
+  </figure>
+  <a class="back-top" href="#content">Back to top</a>
+</section>
+
+<!-- Thomson Reuters -->
+<section class="chapter" id="thomson-reuters" aria-labelledby="h-tr">
+  <div class="prose">
+    <h2 id="h-tr">Thomson Reuters</h2>
+    <p>Before it was formally the Forge Design System, the component library and the building blocks that would become Forge were the UX foundation of the OpenWeb Digital Marketing Platform that we delivered for Thomson Reuters on Adobe Experience Manager (AEM).</p>
+    <p>At that time I was the UX lead for Thomson Reuters Corporate Marketing and owned the UX for both the corporate site and the evolving design system that fed it.</p>
+    <p>The customer and marketing experience issues that Thomson Reuters faced at the time were significant. An audit of the digital landscape identified hundreds of siloed sites across multiple sub-brands that all had their own visual identities on multiple platforms, resulting in inefficiency of cost, delivery, and maintenance to achieve a very disjointed digital experience.</p>
+    <p>The goal of Project OpenWeb was to create a digital experience platform that would serve the creation of an integrated experience that could easily be adopted by multiple businesses and sites to facilitate enterprise digital transformation. Our model was to build a digital marketing infrastructure that was robust in user experience, visual design, data and analytics capture, personalization, and metadata architecture and prove its value with the launch of the corporate and financial business marketing sites as a precursor to the integration of the Thomson Reuters digital experience onto that shared platform. The initial result was that the Financial and Corporate sites were successfully launched on the new platform and served as a gateway to the broader digital landscape that would eventually migrate onto the shared platform. The Tax &amp; Accounting business was next to migrate to OpenWeb and at the time of my departure, planning had started for the migration of Legal Solutions.</p>
+  </div>
+  <figure class="visual">
+    <img src="img/thomson-reuters.webp" width="1296" height="808" loading="lazy" alt="Thomson Reuters corporate and financial marketing pages on the OpenWeb platform">
+  </figure>
+  <a class="back-top" href="#content">Back to top</a>
+</section>
+
+<!-- Refinitiv -->
+<section class="chapter" id="refinitiv" aria-labelledby="h-refinitiv">
+  <div class="prose">
+    <h2 id="h-refinitiv">Refinitiv</h2>
+    <p>When Thomson Reuters sold its Financial division, I was reallocated to the new company it formed: Refinitiv. The digital marketing platform and design system we had built for that business immediately proved its worth. Because the system was flexible by design, we could establish a digital presence for the new brand without building from scratch — simply mapping old styles to new ones across the existing component library. The result was a fast, efficient launch of a mature, turnkey platform, ready to deliver content as soon as it existed.</p>
+    <p>It was during this period that the Forge Design System was formally created: a platform-agnostic ReactJS component library that could be integrated with the AEM-based marketing platform or deployed independently for use cases outside marketing. That flexibility would prove even more valuable when Refinitiv itself became part of LSEG.</p>
+  </div>
+  <figure class="visual">
+    <img src="img/refinitiv.webp" width="1296" height="898" loading="lazy" alt="Refinitiv homepage and Market data page built on the rebranded component library">
+  </figure>
+  <a class="back-top" href="#content">Back to top</a>
+</section>
+
+<!-- LSEG -->
+<section class="chapter" id="lseg" aria-labelledby="h-lseg">
+  <div class="prose">
+    <h2 id="h-lseg">LSEG</h2>
+    <p>When Refinitiv was sold to LSEG, the future of Forge was uncertain. It quickly became clear, though, that LSEG faced the same problem that had originally driven the creation of Forge and the OpenWeb platform at Thomson Reuters: multiple sub-brands, on a variety of platforms, adding up to a disconnected customer experience. Forge's value as a solution was obvious, so we began strategizing how to use it to power a broader LSEG digital transformation — what we called the OneLSEG integrated experience.</p>
+    <p>That work had two goals, and both are still ongoing today. The first was establishing a shared brand identity across all of LSEG's businesses. The second was building a more integrated customer experience — one that could meet any individual user's immediate need while still surfacing the full breadth of LSEG's content, data, and solutions.</p>
+  </div>
+  <div class="card">
+    <div class="prose">
+      <h3>Three stages of LSEG rebranding</h3>
+      <p>The first step was rebranding Forge again — mapping Refinitiv's styles onto the new LSEG identity and extending the brand system with colors, type styles, logos, and spacing built for a robust, accessible digital experience. Then, just as we had done for Thomson Reuters years earlier, we launched the main corporate site on the newly rebranded platform.</p>
+    </div>
+    <figure>
+      <figcaption>Legacy LSEG brand → Rebranding aligned to Refinitiv → Forge integration and AEM migration</figcaption>
+      <img src="img/lseg-rebranding.webp" width="1210" height="735" loading="lazy" alt="Three stages of the LSEG homepage: legacy LSEG brand, rebranding aligned to Refinitiv, and Forge integration with AEM migration">
+    </figure>
+  </div>
+
+  <section class="sub-section" id="lseg-phase-1" aria-labelledby="h-lseg-p1">
+    <div class="prose">
+      <h3 id="h-lseg-p1">OneLSEG Phase 1</h3>
+      <p>Following the release of LSEG.com on Forge and AEM, we worked closely with two teams: the brand team, to refine a shared visual identity across the master brand and all sub-brands, and the digital marketing team, to establish an information architecture connecting the corporate site, sub-brand sites, and customer portals.</p>
+    </div>
+    <div class="card">
+      <h4>LSEG integrated corporate site</h4>
+      <figure>
+        <figcaption>Refreshed branding • Shared global navigation • IA flowing into and across sub-brands</figcaption>
+        <img src="img/lseg-phase-1.webp" width="1210" height="684" loading="lazy" alt="LSEG.com homepage with refreshed branding and shared global navigation across sub-brands">
+      </figure>
+    </div>
+  </section>
+
+  <section class="sub-section" id="lseg-migration" aria-labelledby="h-lseg-mig">
+    <div class="prose">
+      <h3 id="h-lseg-mig">Migration and integration</h3>
+      <p>We then spent nearly two years supporting the migration of all LSEG digital marketing properties onto the platform. Phase 1 of the integrated LSEG experience — using global navigation and a shared information architecture to connect what were previously standalone sites — is now nearly complete.</p>
+      <p>In a relatively short span, we transformed the LSEG digital experience from multiple sites, with disparate branding on multiple platforms, into a shared brand identity on one platform with a common data layer — one where users can explore LSEG's content, data, and solutions from any entry point. Along the way, we enhanced existing components and built new ones to meet each new site's specific experience and content needs.</p>
+      <p>Prior to my departure from LSEG, all sub-brand sites had been migrated to Forge and AEM with the exception of londonstockexchange.com, which launched at the beginning of Q3 2026.</p>
+    </div>
+    <div class="card">
+      <h4>Rebranding of sub-brand sites and migration to Forge and AEM</h4>
+      <figure>
+        <figcaption>Examples of migrated and rebranded sites within global navigation</figcaption>
+        <img src="img/lseg-migration.webp" width="1210" height="546" loading="lazy" alt="FTSE Russell and LCH sites rebranded and migrated to Forge and AEM within LSEG global navigation">
+      </figure>
+    </div>
+  </section>
+
+  <section class="sub-section" id="lseg-phase-2" aria-labelledby="h-lseg-p2">
+    <div class="prose">
+      <h3 id="h-lseg-p2">OneLSEG Phase 2</h3>
+      <p>Having achieved Phase 1's main goals, Phase 2 turned to building a truly integrated, single-site LSEG experience: a more dynamic, motion-forward visual identity, renewed emphasis on thought leadership and events, and a more robust, intuitive data discovery experience. I led the UX and visual design of this transformation during my final months at LSEG.</p>
+      <p>Some highlights of my contributions over that time that are currently in development and expected to launch this year:</p>
+      <ul>
+        <li>New design and IA for integrated site header and navigation (all LSEG sub-brands as one site)</li>
+        <li>Homepage redesign:
+          <ul>
+            <li>Animated (subtle) hero with accessibility controls to pause animation</li>
+            <li>Featured product and sub-brand animated cards with card group accessibility toggle</li>
+            <li>Spotlight on Insights (thought leadership) cards and card block</li>
+          </ul>
+        </li>
+        <li>Featured/related insights card carousel for use in product/category pages</li>
+        <li>New@LSEG (product updates and press releases page) visual refresh</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Phase 2 examples already launched</h4>
+      <div class="card-columns">
+        <div>
+          <h4>New Events landing page</h4>
+          <ul>
+            <li>Page and new components designed by me</li>
+            <li>New events-specific card variant</li>
+            <li>Updated to reflect new photography/graphics style</li>
+            <li>Dynamic feed of events content to ensure all upcoming events are available</li>
+          </ul>
+          <img src="img/lseg-events.webp" width="594" height="464" loading="lazy" alt="LSEG Events landing page with featured event cards">
+        </div>
+        <div>
+          <h4>Data Catalog redesign</h4>
+          <ul>
+            <li>Fly-in modal enhancements to support quick view comparison of data sets</li>
+            <li>Left filter UX and visual improvements</li>
+            <li>Dynamic templates populated via a feed</li>
+          </ul>
+          <img src="img/lseg-data-catalog.webp" width="594" height="464" loading="lazy" alt="LSEG Data Catalogue with fly-in dataset detail panel and filters">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sub-section" id="lseg-data-viz" aria-labelledby="h-lseg-dv">
+    <div class="prose">
+      <h3 id="h-lseg-dv">LSEG data presentation and data visualization</h3>
+      <p>LSEG has a robust financial Data &amp; Analytics division which afforded me the opportunity to work with and design for a wide range of dynamic data display and visualization use-cases. My work in this area included managing data grid components (custom and customized AG Grid) and charts and data viz experiences using Chart.JS, Financial.com charts, and custom data visualizations.</p>
+    </div>
+    <div class="card">
+      <h4>Data grid and data visualization examples</h4>
+      <figure>
+        <img src="img/lseg-data-viz.webp" width="1209" height="734" loading="lazy" alt="LSEG data grid, price chart, and ESG rating visualization examples">
+      </figure>
+    </div>
+  </section>
+
+  <section class="sub-section" id="lseg-forge-beyond" aria-labelledby="h-lseg-fb">
+    <div class="prose">
+      <h3 id="h-lseg-fb">Forge experience integration and efficiency beyond marketing</h3>
+      <p>In the early days of Refinitiv, we made the decision to separate the front-end of the design system and launched a platform-agnostic ReactJS component library and CSS that could be leveraged by use-cases outside of marketing and AEM. We also initiated a secondary theme and branch of Forge that allowed us to use tokens to apply subtle visual differences between authenticated customer portals/applications and the marketing experience. Forge components are now used directly by a number of customer support sites that sit between the marketing and product experience and Forge works as a bridge between the digital and product experiences. Another key new feature of this branch was the addition of an application switcher that allows customers to move between resources relevant to their customer profile.</p>
+    </div>
+    <div class="card">
+      <h4>Authenticated portal examples using Forge outside AEM</h4>
+      <figure>
+        <img src="img/lseg-portals.webp" width="1200" height="757" loading="lazy" alt="Authenticated LSEG customer portals: support home, data discovery, alert settings, and application switcher">
+      </figure>
+    </div>
+  </section>
+  <a class="back-top" href="#content">Back to top</a>
+</section>
+
+<!-- Conclusion -->
+<section class="chapter" id="conclusion" aria-labelledby="h-conclusion">
+  <div class="prose">
+    <h2 id="h-conclusion">Forge Design System: Case study conclusion</h2>
+    <p>Forge, and the Thomson Reuters marketing platform design system that preceded it, has been at the center of my work and growth as a UX leader for nearly a decade. It has kept me engaged because it never stopped giving me room to evolve — as a strategist, a team leader, and a designer — and to build real partnerships with project teams, partners, and stakeholders in service of digital transformation goals across three global enterprises. That journey has given me deep expertise across information architecture, digital strategy, design systems, service design, accessibility, product ownership, and program management, built on a genuinely broad foundation. I believe that combination — depth paired with range — is exactly what's needed to help the right team meet this moment: partnering with powerful new AI tools not just to adopt them, but to define what comes next.</p>
+    <p class="signature">Robert Chance<br>UX leadership &amp; strategy<br>Minneapolis, MN</p>
+  </div>
+  <a class="back-top" href="#content">Back to top</a>
+</section>
+
+</div>
+</main>
+
+<script>
+// Highlight the nav item for the section currently in view.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav a[href^="#"]'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var sections = Object.keys(byId).map(function (id) { return document.getElementById(id); }).filter(Boolean);
+  function update() {
+    var offset = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--banner-h')) || 0) + 120;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top - offset <= 0) current = sections[i];
+    }
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) current = sections[sections.length - 1];
+    links.forEach(function (a) { a.removeAttribute('aria-current'); });
+    var active = byId[current.id];
+    active.setAttribute('aria-current', 'true');
+    if (window.matchMedia('(max-width: 960px)').matches) {
+      var top = active.closest('.nav > ul > li').querySelector('a');
+      top.setAttribute('aria-current', 'true');
+      var nav = document.querySelector('.nav');
+      var l = top.offsetLeft, r = l + top.offsetWidth;
+      if (l < nav.scrollLeft + 16) nav.scrollLeft = l - 16;
+      else if (r > nav.scrollLeft + nav.clientWidth - 16) nav.scrollLeft = r - nav.clientWidth + 16;
+    }
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    if (!ticking) { requestAnimationFrame(function () { update(); ticking = false; }); ticking = true; }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+})();
+</script>
+</body>
+</html>
